@@ -1,0 +1,6 @@
+{
+  "name": "NauticaLog - Sistem Informasi & Management Angkutan Laut",
+  "description": "Sistem Manajemen Angkutan Laut Enterprise dengan pelacakan jadwal kapal, manajemen kargo manifest, CRUD master data, transaksi, dan analitik operasional.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
