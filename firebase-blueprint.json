@@ -1,0 +1,251 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "System operational user and admin accounts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 120 },
+        "username": { "type": "string", "maxLength": 50 },
+        "role": { "type": "string", "enum": ["Super Admin", "Logistics Manager", "Port Supervisor", "Finance Admin"] },
+        "avatar": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "Vessel": {
+      "title": "Vessel Ship",
+      "description": "Maritime ship fleet",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "imoNumber": { "type": "string", "maxLength": 20 },
+        "name": { "type": "string", "maxLength": 100 },
+        "vesselType": { "type": "string", "enum": ["Container Ship", "Bulk Carrier", "Tanker", "Ro-Ro Cargo"] },
+        "capacityDwt": { "type": "number" },
+        "capacityTeu": { "type": "number" },
+        "flag": { "type": "string" },
+        "yearBuilt": { "type": "number" },
+        "status": { "type": "string", "enum": ["At Sea", "In Transit", "At Berth", "In Anchorage", "Under Maintenance"] },
+        "fuelEfficiency": { "type": "number" },
+        "currentSpeedKnots": { "type": "number" },
+        "ownerCompany": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "imoNumber", "name", "vesselType"]
+    },
+    "Port": {
+      "title": "Port Terminal",
+      "description": "Seaport terminal details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string", "maxLength": 10 },
+        "name": { "type": "string", "maxLength": 100 },
+        "city": { "type": "string" },
+        "province": { "type": "string" },
+        "berthCount": { "type": "number" },
+        "maxDraftMeters": { "type": "number" },
+        "handlingCapacityTeu": { "type": "number" },
+        "operationalStatus": { "type": "string", "enum": ["Active", "High Traffic", "Maintenance"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "code", "name", "city"]
+    },
+    "Route": {
+      "title": "Shipping Route",
+      "description": "Voyage shipping route",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "originPortId": { "type": "string" },
+        "destinationPortId": { "type": "string" },
+        "distanceNauticalMiles": { "type": "number" },
+        "estimatedTransitHours": { "type": "number" },
+        "baseFreightRateTeu": { "type": "number" },
+        "baseFreightRateTon": { "type": "number" },
+        "status": { "type": "string", "enum": ["Active", "Suspended"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "code", "originPortId", "destinationPortId"]
+    },
+    "Customer": {
+      "title": "Customer Shipper",
+      "description": "Shipper or consignee customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "companyName": { "type": "string" },
+        "npwp": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "customerCategory": { "type": "string", "enum": ["Exporter", "Importer", "Freight Forwarder", "Manufacturer"] },
+        "creditLimitRp": { "type": "number" },
+        "activeStatus": { "type": "string", "enum": ["Active", "Inactive"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "code", "companyName"]
+    },
+    "CargoType": {
+      "title": "Cargo Type Spec",
+      "description": "Cargo type specification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["Dry Container", "Reefer Container", "Hazardous HAZMAT", "General Bulk", "Liquid Bulk"] },
+        "unit": { "type": "string", "enum": ["TEU", "Metric Ton", "CBM"] },
+        "handlingFeePerUnit": { "type": "number" },
+        "temperatureRequired": { "type": "string" },
+        "hazmatClass": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "code", "name", "category", "unit"]
+    },
+    "Schedule": {
+      "title": "Ship Schedule",
+      "description": "Voyage schedule and tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "voyageNumber": { "type": "string" },
+        "vesselId": { "type": "string" },
+        "routeId": { "type": "string" },
+        "etd": { "type": "string" },
+        "atd": { "type": "string" },
+        "eta": { "type": "string" },
+        "ata": { "type": "string" },
+        "currentStatus": { "type": "string", "enum": ["Scheduled", "Loading", "In Transit", "Arrived", "Delayed"] },
+        "currentCoordinates": { "type": "string" },
+        "progressPercentage": { "type": "number" },
+        "weatherCondition": { "type": "string", "enum": ["Calm Sea", "Moderate Waves", "Rough Sea", "Storm Warning"] },
+        "delayReason": { "type": "string" },
+        "fuelConsumedLiters": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "voyageNumber", "vesselId", "routeId"]
+    },
+    "CargoBooking": {
+      "title": "Cargo Booking Manifest",
+      "description": "Cargo booking and Bill of Lading",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "bookingNumber": { "type": "string" },
+        "blNumber": { "type": "string" },
+        "customerId": { "type": "string" },
+        "scheduleId": { "type": "string" },
+        "cargoTypeId": { "type": "string" },
+        "containerNumber": { "type": "string" },
+        "sealNumber": { "type": "string" },
+        "quantity": { "type": "number" },
+        "weightTons": { "type": "number" },
+        "volumeCbm": { "type": "number" },
+        "goodsDescription": { "type": "string" },
+        "loadingPortId": { "type": "string" },
+        "dischargePortId": { "type": "string" },
+        "freightChargeRp": { "type": "number" },
+        "paymentStatus": { "type": "string", "enum": ["Unpaid", "Invoiced", "Paid"] },
+        "shippingStatus": { "type": "string", "enum": ["Booked", "Loaded at Port", "In Transit", "Discharged", "Delivered"] },
+        "bookingDate": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "bookingNumber", "blNumber", "customerId", "scheduleId"]
+    },
+    "Invoice": {
+      "title": "Billing Invoice",
+      "description": "Freight billing invoice",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "bookingId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "subtotalRp": { "type": "number" },
+        "demurrageFeeRp": { "type": "number" },
+        "taxAmountRp": { "type": "number" },
+        "totalAmountRp": { "type": "number" },
+        "issueDate": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["Pending", "Paid", "Overdue"] },
+        "paymentMethod": { "type": "string" },
+        "paidAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "invoiceNumber", "bookingId", "customerId"]
+    },
+    "SystemLog": {
+      "title": "System Audit Log",
+      "description": "System activity log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "userId", "userName", "action"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles and roles"
+    },
+    "/vessels/{vesselId}": {
+      "schema": { "$ref": "#/entities/Vessel" },
+      "description": "Ship fleet master data"
+    },
+    "/ports/{portId}": {
+      "schema": { "$ref": "#/entities/Port" },
+      "description": "Seaports master data"
+    },
+    "/routes/{routeId}": {
+      "schema": { "$ref": "#/entities/Route" },
+      "description": "Shipping routes master data"
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Shippers and customers master data"
+    },
+    "/cargoTypes/{cargoTypeId}": {
+      "schema": { "$ref": "#/entities/CargoType" },
+      "description": "Cargo type specifications"
+    },
+    "/schedules/{scheduleId}": {
+      "schema": { "$ref": "#/entities/Schedule" },
+      "description": "Voyage schedules and tracking"
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/CargoBooking" },
+      "description": "Cargo manifests and Bills of Lading"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/Invoice" },
+      "description": "Billing invoices"
+    },
+    "/logs/{logId}": {
+      "schema": { "$ref": "#/entities/SystemLog" },
+      "description": "System activity logs"
+    }
+  }
+}

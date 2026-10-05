@@ -1,3 +1,13 @@
+import { db, auth } from './firebase';
+import {
+  collection,
+  doc,
+  setDoc,
+  getDocs,
+  deleteDoc,
+  updateDoc
+} from 'firebase/firestore';
+
 import {
   User,
   Vessel,
@@ -11,6 +21,53 @@ import {
   SystemLog,
   AnalyticsSummary
 } from '../types';
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 let authToken: string | null = null;
 
@@ -55,6 +112,23 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
   return data as T;
 }
 
+// Sync helper to firestore
+async function syncFirestoreDoc(colName: string, docId: string, data: any) {
+  try {
+    await setDoc(doc(db, colName, docId), data, { merge: true });
+  } catch (err) {
+    console.warn(`Firestore sync warning for ${colName}/${docId}:`, err);
+  }
+}
+
+async function removeFirestoreDoc(colName: string, docId: string) {
+  try {
+    await deleteDoc(doc(db, colName, docId));
+  } catch (err) {
+    console.warn(`Firestore delete warning for ${colName}/${docId}:`, err);
+  }
+}
+
 export const api = {
   // Auth
   login: (usernameOrEmail: string, password: string) =>
@@ -73,74 +147,141 @@ export const api = {
 
   // Master Data CRUD - Vessels
   getVessels: () => apiFetch<Vessel[]>('/api/master/vessels'),
-  createVessel: (data: Partial<Vessel>) =>
-    apiFetch<Vessel>('/api/master/vessels', { method: 'POST', body: JSON.stringify(data) }),
-  updateVessel: (id: string, data: Partial<Vessel>) =>
-    apiFetch<Vessel>(`/api/master/vessels/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteVessel: (id: string) =>
-    apiFetch<{ success: boolean; id: string }>(`/api/master/vessels/${id}`, { method: 'DELETE' }),
+  createVessel: async (data: Partial<Vessel>) => {
+    const vessel = await apiFetch<Vessel>('/api/master/vessels', { method: 'POST', body: JSON.stringify(data) });
+    await syncFirestoreDoc('vessels', vessel.id, vessel);
+    return vessel;
+  },
+  updateVessel: async (id: string, data: Partial<Vessel>) => {
+    const updated = await apiFetch<Vessel>(`/api/master/vessels/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    await syncFirestoreDoc('vessels', id, updated);
+    return updated;
+  },
+  deleteVessel: async (id: string) => {
+    const res = await apiFetch<{ success: boolean; id: string }>(`/api/master/vessels/${id}`, { method: 'DELETE' });
+    await removeFirestoreDoc('vessels', id);
+    return res;
+  },
 
   // Master Data CRUD - Ports
   getPorts: () => apiFetch<Port[]>('/api/master/ports'),
-  createPort: (data: Partial<Port>) =>
-    apiFetch<Port>('/api/master/ports', { method: 'POST', body: JSON.stringify(data) }),
-  updatePort: (id: string, data: Partial<Port>) =>
-    apiFetch<Port>(`/api/master/ports/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deletePort: (id: string) =>
-    apiFetch<{ success: boolean; id: string }>(`/api/master/ports/${id}`, { method: 'DELETE' }),
+  createPort: async (data: Partial<Port>) => {
+    const port = await apiFetch<Port>('/api/master/ports', { method: 'POST', body: JSON.stringify(data) });
+    await syncFirestoreDoc('ports', port.id, port);
+    return port;
+  },
+  updatePort: async (id: string, data: Partial<Port>) => {
+    const updated = await apiFetch<Port>(`/api/master/ports/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    await syncFirestoreDoc('ports', id, updated);
+    return updated;
+  },
+  deletePort: async (id: string) => {
+    const res = await apiFetch<{ success: boolean; id: string }>(`/api/master/ports/${id}`, { method: 'DELETE' });
+    await removeFirestoreDoc('ports', id);
+    return res;
+  },
 
   // Master Data CRUD - Routes
   getRoutes: () => apiFetch<Route[]>('/api/master/routes'),
-  createRoute: (data: Partial<Route>) =>
-    apiFetch<Route>('/api/master/routes', { method: 'POST', body: JSON.stringify(data) }),
-  updateRoute: (id: string, data: Partial<Route>) =>
-    apiFetch<Route>(`/api/master/routes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteRoute: (id: string) =>
-    apiFetch<{ success: boolean; id: string }>(`/api/master/routes/${id}`, { method: 'DELETE' }),
+  createRoute: async (data: Partial<Route>) => {
+    const route = await apiFetch<Route>('/api/master/routes', { method: 'POST', body: JSON.stringify(data) });
+    await syncFirestoreDoc('routes', route.id, route);
+    return route;
+  },
+  updateRoute: async (id: string, data: Partial<Route>) => {
+    const updated = await apiFetch<Route>(`/api/master/routes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    await syncFirestoreDoc('routes', id, updated);
+    return updated;
+  },
+  deleteRoute: async (id: string) => {
+    const res = await apiFetch<{ success: boolean; id: string }>(`/api/master/routes/${id}`, { method: 'DELETE' });
+    await removeFirestoreDoc('routes', id);
+    return res;
+  },
 
   // Master Data CRUD - Customers
   getCustomers: () => apiFetch<Customer[]>('/api/master/customers'),
-  createCustomer: (data: Partial<Customer>) =>
-    apiFetch<Customer>('/api/master/customers', { method: 'POST', body: JSON.stringify(data) }),
-  updateCustomer: (id: string, data: Partial<Customer>) =>
-    apiFetch<Customer>(`/api/master/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteCustomer: (id: string) =>
-    apiFetch<{ success: boolean; id: string }>(`/api/master/customers/${id}`, { method: 'DELETE' }),
+  createCustomer: async (data: Partial<Customer>) => {
+    const customer = await apiFetch<Customer>('/api/master/customers', { method: 'POST', body: JSON.stringify(data) });
+    await syncFirestoreDoc('customers', customer.id, customer);
+    return customer;
+  },
+  updateCustomer: async (id: string, data: Partial<Customer>) => {
+    const updated = await apiFetch<Customer>(`/api/master/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    await syncFirestoreDoc('customers', id, updated);
+    return updated;
+  },
+  deleteCustomer: async (id: string) => {
+    const res = await apiFetch<{ success: boolean; id: string }>(`/api/master/customers/${id}`, { method: 'DELETE' });
+    await removeFirestoreDoc('customers', id);
+    return res;
+  },
 
   // Master Data CRUD - Cargo Types
   getCargoTypes: () => apiFetch<CargoType[]>('/api/master/cargo-types'),
-  createCargoType: (data: Partial<CargoType>) =>
-    apiFetch<CargoType>('/api/master/cargo-types', { method: 'POST', body: JSON.stringify(data) }),
-  updateCargoType: (id: string, data: Partial<CargoType>) =>
-    apiFetch<CargoType>(`/api/master/cargo-types/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteCargoType: (id: string) =>
-    apiFetch<{ success: boolean; id: string }>(`/api/master/cargo-types/${id}`, { method: 'DELETE' }),
+  createCargoType: async (data: Partial<CargoType>) => {
+    const cargoType = await apiFetch<CargoType>('/api/master/cargo-types', { method: 'POST', body: JSON.stringify(data) });
+    await syncFirestoreDoc('cargoTypes', cargoType.id, cargoType);
+    return cargoType;
+  },
+  updateCargoType: async (id: string, data: Partial<CargoType>) => {
+    const updated = await apiFetch<CargoType>(`/api/master/cargo-types/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    await syncFirestoreDoc('cargoTypes', id, updated);
+    return updated;
+  },
+  deleteCargoType: async (id: string) => {
+    const res = await apiFetch<{ success: boolean; id: string }>(`/api/master/cargo-types/${id}`, { method: 'DELETE' });
+    await removeFirestoreDoc('cargoTypes', id);
+    return res;
+  },
 
   // Transaksi Data CRUD - Schedules
   getSchedules: () => apiFetch<Schedule[]>('/api/transactions/schedules'),
-  createSchedule: (data: Partial<Schedule>) =>
-    apiFetch<Schedule>('/api/transactions/schedules', { method: 'POST', body: JSON.stringify(data) }),
-  updateSchedule: (id: string, data: Partial<Schedule>) =>
-    apiFetch<Schedule>(`/api/transactions/schedules/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteSchedule: (id: string) =>
-    apiFetch<{ success: boolean; id: string }>(`/api/transactions/schedules/${id}`, { method: 'DELETE' }),
+  createSchedule: async (data: Partial<Schedule>) => {
+    const schedule = await apiFetch<Schedule>('/api/transactions/schedules', { method: 'POST', body: JSON.stringify(data) });
+    await syncFirestoreDoc('schedules', schedule.id, schedule);
+    return schedule;
+  },
+  updateSchedule: async (id: string, data: Partial<Schedule>) => {
+    const updated = await apiFetch<Schedule>(`/api/transactions/schedules/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    await syncFirestoreDoc('schedules', id, updated);
+    return updated;
+  },
+  deleteSchedule: async (id: string) => {
+    const res = await apiFetch<{ success: boolean; id: string }>(`/api/transactions/schedules/${id}`, { method: 'DELETE' });
+    await removeFirestoreDoc('schedules', id);
+    return res;
+  },
 
   // Transaksi Data CRUD - Bookings
   getBookings: () => apiFetch<CargoBooking[]>('/api/transactions/bookings'),
-  createBooking: (data: Partial<CargoBooking>) =>
-    apiFetch<{ booking: CargoBooking; invoice: Invoice }>('/api/transactions/bookings', {
+  createBooking: async (data: Partial<CargoBooking>) => {
+    const res = await apiFetch<{ booking: CargoBooking; invoice: Invoice }>('/api/transactions/bookings', {
       method: 'POST',
       body: JSON.stringify(data)
-    }),
-  updateBooking: (id: string, data: Partial<CargoBooking>) =>
-    apiFetch<CargoBooking>(`/api/transactions/bookings/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteBooking: (id: string) =>
-    apiFetch<{ success: boolean; id: string }>(`/api/transactions/bookings/${id}`, { method: 'DELETE' }),
+    });
+    await syncFirestoreDoc('bookings', res.booking.id, res.booking);
+    await syncFirestoreDoc('invoices', res.invoice.id, res.invoice);
+    return res;
+  },
+  updateBooking: async (id: string, data: Partial<CargoBooking>) => {
+    const updated = await apiFetch<CargoBooking>(`/api/transactions/bookings/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    await syncFirestoreDoc('bookings', id, updated);
+    return updated;
+  },
+  deleteBooking: async (id: string) => {
+    const res = await apiFetch<{ success: boolean; id: string }>(`/api/transactions/bookings/${id}`, { method: 'DELETE' });
+    await removeFirestoreDoc('bookings', id);
+    return res;
+  },
 
   // Transaksi Data CRUD - Invoices
   getInvoices: () => apiFetch<Invoice[]>('/api/transactions/invoices'),
-  updateInvoice: (id: string, data: Partial<Invoice>) =>
-    apiFetch<Invoice>(`/api/transactions/invoices/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateInvoice: async (id: string, data: Partial<Invoice>) => {
+    const updated = await apiFetch<Invoice>(`/api/transactions/invoices/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    await syncFirestoreDoc('invoices', id, updated);
+    return updated;
+  },
 
   // Analytics & Logs
   getAnalyticsSummary: () => apiFetch<AnalyticsSummary>('/api/analytics/summary'),

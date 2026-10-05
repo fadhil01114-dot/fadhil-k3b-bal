@@ -116,12 +116,12 @@ export const LoginForm: React.FC = () => {
             {/* Form Header */}
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-                {isRegisterMode ? 'Registrasi Akun Operasional' : 'Masuk Administrator'}
+                {isRegisterMode ? 'Registrasi Akun Operasional' : 'Masuk Sistem (Semua Akses Ready)'}
               </h2>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 {isRegisterMode
                   ? 'Daftarkan akun staf baru untuk mengakses sistem angkutan laut.'
-                  : 'Silakan masukkan username/email dan password admin Anda.'}
+                  : 'Ketik username / email dan password APAPUN, atau klik opsi instan di bawah untuk langsung masuk.'}
               </p>
             </div>
 
@@ -137,8 +137,8 @@ export const LoginForm: React.FC = () => {
               /* LOGIN FORM */
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                    Username atau Email Admin
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Username atau Email
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -149,15 +149,15 @@ export const LoginForm: React.FC = () => {
                       required
                       value={usernameOrEmail}
                       onChange={(e) => setUsernameOrEmail(e.target.value)}
-                      placeholder="admin@maritime.co.id atau admin"
+                      placeholder="Masukkan username atau email bebas..."
                       className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                    Password Admin
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Password
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -165,61 +165,102 @@ export const LoginForm: React.FC = () => {
                     </div>
                     <input
                       type="password"
-                      required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Masukkan password (atau kosongkan)"
                       className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
                     />
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-                >
-                  {loading ? (
-                    <span>Memproses Login...</span>
-                  ) : (
-                    <>
-                      <span>Masuk ke Sistem</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="py-3.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  >
+                    {loading ? (
+                      <span>Memproses...</span>
+                    ) : (
+                      <>
+                        <span>Masuk Dengan Akun Ini</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
 
-                {/* Demo Quick Logins */}
-                <div className="pt-6 border-t border-slate-100 mt-6">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                    Pilih Akun Demo Cepat (Siap Pengujian):
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setLoading(true);
+                      try {
+                        await login('admin', 'admin123');
+                      } catch (err: any) {
+                        setError(err.message || 'Gagal masuk instan');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="py-3.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  >
+                    <Shield className="w-4 h-4" />
+                    <span>⚡ Masuk Instan (1-Click)</span>
+                  </button>
+                </div>
+
+                {/* Demo Quick Logins for All Roles */}
+                <div className="pt-5 border-t border-slate-100 mt-5 space-y-2">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Pilih Peran Akun Penguji (1-Click Switch):
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <button
                       type="button"
-                      onClick={() => fillQuickLogin('admin', 'admin123')}
-                      className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-left transition-all group cursor-pointer"
+                      onClick={() => {
+                        fillQuickLogin('admin', 'admin123');
+                        login('admin', 'admin123');
+                      }}
+                      className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-left transition-all cursor-pointer"
                     >
-                      <div className="text-xs font-bold text-slate-800 group-hover:text-blue-700">Super Admin</div>
-                      <div className="text-[10px] text-slate-500 truncate">admin / admin123</div>
+                      <div className="text-xs font-bold text-slate-800">Super Admin</div>
+                      <div className="text-[10px] text-slate-400">Penuh System</div>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => fillQuickLogin('manager', 'manager123')}
-                      className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-left transition-all group cursor-pointer"
+                      onClick={() => {
+                        fillQuickLogin('manager', 'manager123');
+                        login('manager', 'manager123');
+                      }}
+                      className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-left transition-all cursor-pointer"
                     >
-                      <div className="text-xs font-bold text-slate-800 group-hover:text-blue-700">Manager Logistik</div>
-                      <div className="text-[10px] text-slate-500 truncate">manager / manager123</div>
+                      <div className="text-xs font-bold text-slate-800">Logistics Mgr</div>
+                      <div className="text-[10px] text-slate-400">Jadwal & Kargo</div>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => fillQuickLogin('portoper', 'port123')}
-                      className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-left transition-all group cursor-pointer"
+                      onClick={() => {
+                        fillQuickLogin('portoper', 'port123');
+                        login('portoper', 'port123');
+                      }}
+                      className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-left transition-all cursor-pointer"
                     >
-                      <div className="text-xs font-bold text-slate-800 group-hover:text-blue-700">Supervisor Port</div>
-                      <div className="text-[10px] text-slate-500 truncate">portoper / port123</div>
+                      <div className="text-xs font-bold text-slate-800">Port Supervisor</div>
+                      <div className="text-[10px] text-slate-400">Operasi Pelabuhan</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        fillQuickLogin('finance', 'fin123');
+                        login('finance', 'fin123');
+                      }}
+                      className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-left transition-all cursor-pointer"
+                    >
+                      <div className="text-xs font-bold text-slate-800">Finance Admin</div>
+                      <div className="text-[10px] text-slate-400">Invoice & Tagihan</div>
                     </button>
                   </div>
                 </div>

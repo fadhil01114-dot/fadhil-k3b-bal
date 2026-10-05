@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Master rules for operational maritime collections
+    match /users/{userId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /vessels/{vesselId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /ports/{portId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /routes/{routeId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /customers/{customerId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /cargoTypes/{cargoTypeId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /schedules/{scheduleId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /bookings/{bookingId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /invoices/{invoiceId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /logs/{logId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}
